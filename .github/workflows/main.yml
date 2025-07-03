@@ -16,9 +16,9 @@ jobs:
         python-version: '3.12'
     - name: Kütüphaneleri yükle
       run: |
-        python -m pip install --upradge pip
+        python -m pip install --upgrade pip
         pip install -r app/requirements.txt
     - name: Pytest ile testleri çalıştır
       run: |
-         pip install pytest
-         pytest
+        pip install pytest
+        pytest
