@@ -3,21 +3,24 @@ from datetime import datetime
 import psycopg2
 import os
 app=Flask(__name__)
-conn=psycopg2.connect(
-    host="db",
-    database="mydatabase",
-    user="myuser",
-    password="mypassword"
-)
-cur=conn.cursor()
-cur.execute("""
-    Create table if not exists messages(
-            id serial PRIMARY KEY,
+conn=None
+cur=None
+if not os.environ.get("FLASK_TEST"):
+    conn = psycopg2.connect(
+        host="db",
+        database="mydatabase",
+        user="myuser",
+        password="mypassword"
+    )
+    cur = conn.cursor()
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS messages (
+            id SERIAL PRIMARY KEY,
             name TEXT,
             message TEXT
-            );
-            """)
-conn.commit()
+        );
+    """)
+    conn.commit()
 html="""
 <!doctype html>
 <title>Mesaj Uygulaması</title>
@@ -34,19 +37,24 @@ html="""
     {%endfor%}
 </ul>
 """
-@app.route("/",methods=["GET","POST"])
+@app.route("/", methods=["GET", "POST"])
 def index():
-    if request.method=="POST":
-        name=request.form["name"]
-        message=request.form["message"]
-        log_line=f"[{datetime.now()}] {name}: {message}\n"
-        with open("logs/app.log","a") as log_file:
+    if request.method == "POST":
+        name = request.form["name"]
+        message = request.form["message"]
+        log_line = f"[{datetime.now()}] {name}: {message}\n"
+        with open("logs/app.log", "a") as log_file:
             log_file.write(log_line)
-        cur.execute("INSERT INTO messages(name,message) VALUES (%s,%s)",(name,message))
-        conn.commit()
-    cur.execute("SELECT name,message FROM messages ORDER BY id DESC")
-    all_messages=cur.fetchall()
-    return render_template_string(html,messages=all_messages)
+        if cur:
+            cur.execute("INSERT INTO messages(name, message) VALUES (%s, %s)", (name, message))
+            conn.commit()
+    if cur:
+        cur.execute("SELECT name, message FROM messages ORDER BY id DESC")
+        all_messages = cur.fetchall()
+    else:
+        all_messages = []
+    return render_template_string(html, messages=all_messages)
+
 
 if __name__=="__main__":
     app.run(debug=True,host="0.0.0.0")

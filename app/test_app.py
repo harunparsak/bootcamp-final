@@ -1,3 +1,6 @@
+import os
+os.environ["FLASK_TEST"]="1"
+
 from app import app
 
 def test_homepage():
